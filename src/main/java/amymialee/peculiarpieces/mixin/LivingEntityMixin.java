@@ -7,6 +7,7 @@ import dev.emi.trinkets.api.SlotReference;
 import dev.emi.trinkets.api.TrinketComponent;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.advancement.criterion.Criteria;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
@@ -33,6 +34,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -114,19 +116,11 @@ public abstract class LivingEntityMixin extends Entity {
         return p;
     }
 
-    @Inject(method = "applyClimbingSpeed", at = @At("HEAD"), cancellable = true)
-    private void PeculiarPieces$MoreScaffolds(Vec3d motion, CallbackInfoReturnable<Vec3d> cir) {
-        if (this.isClimbing()) {
-            this.onLanding();
-            double d = MathHelper.clamp(motion.x, -0.15f, 0.15f);
-            double e = MathHelper.clamp(motion.z, -0.15f, 0.15f);
-            double g = Math.max(motion.y, -0.15f);
-            if (g < 0.0 && !this.getBlockStateAtPos().isIn(PeculiarPieces.SCAFFOLDING)) {
-                this.isHoldingOntoLadder();
-            }
-            motion = new Vec3d(d, g, e);
-        }
-        cir.setReturnValue(motion);
+    @Redirect(method = "applyClimbingSpeed", at = @At(
+      value = "INVOKE", target = "Lnet/minecraft/block/BlockState;isOf(Lnet/minecraft/block/Block;)Z"
+    ))
+    private boolean PeculiarPieces$MoreScaffolds(BlockState instance, Block block) {
+        return instance.isIn(PeculiarPieces.SCAFFOLDING);
     }
 
     @Inject(method = "tryUseTotem", at = @At("RETURN"), cancellable = true)
