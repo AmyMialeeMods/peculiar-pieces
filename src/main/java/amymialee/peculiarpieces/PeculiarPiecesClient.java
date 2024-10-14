@@ -19,6 +19,7 @@ import amymialee.peculiarpieces.particles.WardingParticle;
 import amymialee.peculiarpieces.registry.PeculiarBlocks;
 import amymialee.peculiarpieces.registry.PeculiarEntities;
 import amymialee.peculiarpieces.registry.PeculiarItems;
+import amymialee.peculiarpieces.registry.PeculiarPackets;
 import amymialee.peculiarpieces.screens.CouriporterScreen;
 import amymialee.peculiarpieces.screens.CreativeBarrelScreen;
 import amymialee.peculiarpieces.screens.EquipmentStandScreen;
@@ -68,8 +69,11 @@ public class PeculiarPiecesClient implements ClientModInitializer {
     public static final EntityModelLayer EQUIPMENT_STAND = new EntityModelLayer(PeculiarPieces.id("equipment_stand"), "main");
     private final FlagBlockEntity renderFlag = new FlagBlockEntity(BlockPos.ORIGIN, PeculiarBlocks.FLAG.getDefaultState());
 
+    public static boolean StrongerLeadsClientRule = false;
+
     @Override
     public void onInitializeClient() {
+        PeculiarPackets.registerS2CPackets();
         BlockRenderLayerMap.INSTANCE.putBlock(PeculiarBlocks.CHECKPOINT, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(PeculiarBlocks.CHECKPOINT_REMOVER, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(PeculiarBlocks.CHECKPOINT_RETURNER, RenderLayer.getTranslucent());
