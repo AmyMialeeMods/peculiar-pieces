@@ -22,6 +22,7 @@
     "EntityMixin",
     "ExplosionMixin",
     "FluidBlockMixin",
+    "GameRuleRuleMixin",
     "HopperBlockEntityMixin",
     "ItemEntityMixin",
     "ItemStackMixin",
@@ -33,11 +34,11 @@
     "PistonBlockMixin",
     "PlayerEntityMixin",
     "PowderSnowBlockMixin",
+    "RedstoneViewMixin",
     "RedstoneWireBlockMixin",
     "SculkShriekerBlockMixin",
     "SheepEntityMixin",
-    "StatusEffectInstanceAccessor",
-    "RedstoneViewMixin"
+    "StatusEffectInstanceAccessor"
   ],
   "client": [
     "CapeFeatureRendererMixin",

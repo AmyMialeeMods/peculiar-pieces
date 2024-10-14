@@ -15,6 +15,7 @@ import amymialee.peculiarpieces.recipe.ShapelessNbtRecipe;
 import amymialee.peculiarpieces.registry.PeculiarBlocks;
 import amymialee.peculiarpieces.registry.PeculiarEntities;
 import amymialee.peculiarpieces.registry.PeculiarItems;
+import amymialee.peculiarpieces.registry.PeculiarPackets;
 import amymialee.peculiarpieces.screens.CouriporterScreenHandler;
 import amymialee.peculiarpieces.screens.CreativeBarrelScreenHandler;
 import amymialee.peculiarpieces.screens.EquipmentStandScreenHandler;
@@ -33,10 +34,12 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry;
 import net.minecraft.block.Block;
@@ -142,16 +145,21 @@ public class PeculiarPieces implements ModInitializer {
     //RecipeSerializers
     public static final RecipeSerializer<ShapedRecipe> SHAPED_NBT_CRAFTING_SERIALZIER = RecipeSerializer.register(id("nbt_crafting_shaped").toString(), new ShapedNbtRecipe.Serializer());
     public static final RecipeSerializer<ShapelessRecipe> SHAPELESS_NBT_CRAFTING_SERIALZIER = RecipeSerializer.register(id("nbt_crafting_shapeless").toString(), new ShapelessNbtRecipe.Serializer());
-    
+
+    public static GameRules.Key<GameRules.BooleanRule> StrongerLeadsGamerule;
+
     @Override
     public void onInitialize() {
         PeculiarItems.init();
         PeculiarBlocks.init();
         PeculiarEntities.init();
+        PeculiarPackets.registerPackets();
+
         Registry.register(Registries.PARTICLE_TYPE, PeculiarPieces.id("warding_aura"), WARDING_AURA);
         Registry.register(Registries.ITEM_GROUP, PeculiarPieces.id("peculiarpieces_group"), PIECES_GROUP);
         Registry.register(Registries.ITEM_GROUP, PeculiarPieces.id("peculiarpieces_creative_group"), CREATIVE_GROUP);
         Registry.register(Registries.ITEM_GROUP, PeculiarPieces.id("peculiarpieces_potion_group"), POTION_GROUP);
+        StrongerLeadsGamerule = GameRuleRegistry.register("strongerLeads", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) -> {
             var literalArgumentBuilder = CommandManager.literal("peculiar").requires(source -> source.hasPermissionLevel(2));
             for (var gameMode : GameMode.values()) {
@@ -288,10 +296,18 @@ public class PeculiarPieces implements ModInitializer {
                                         return targets.size();
                                     })));
             dispatcher.register(literalArgumentBuilder);
+
         });
         ServerTickEvents.END_WORLD_TICK.register(serverWorld -> WarpManager.tick());
         ServerTickEvents.END_WORLD_TICK.register(serverWorld -> RedstoneManager.tick());
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            server.getPlayerManager().getPlayerList().forEach(PeculiarPieces::syncGameRuleToClient);
+        });
+        ServerPlayConnectionEvents.JOIN.register((handler, ps, server) -> {
+            syncGameRuleToClient(handler.player);
+        });
         PlayerCrouchCallback.EVENT.register((player, world) -> {
+            player.getServer().getPlayerManager().getPlayerList().forEach(PeculiarPieces::syncGameRuleToClient);
             var pos = player.getBlockPos().add(0, -1, 0);
             var state = world.getBlockState(pos);
             if (state.getBlock() instanceof PlayerCrouchConsumingBlock block) {
@@ -307,6 +323,11 @@ public class PeculiarPieces implements ModInitializer {
                 }
             }
         });
+
+    }
+    public static void syncGameRuleToClient(ServerPlayerEntity player) {
+        boolean strongerLeadsRule = player.getWorld().getGameRules().get(PeculiarPieces.StrongerLeadsGamerule).get();
+        PeculiarPackets.sendGameRuleToClient(player, strongerLeadsRule);
     }
 
     public static Identifier id(String path) {
